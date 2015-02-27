@@ -151,6 +151,9 @@ else:
 
 # main
 #
+proc handleConnection(socket: Socket) =
+    echo "blub"
+
 var inp = "".TaintedString
 var socket = newSocket()
 
@@ -197,4 +200,12 @@ else:
 
 socket.send("\n.\n")
 
-socket.close()
+if nowait:
+    let pid = fork()
+
+    if pid == 0:
+        handleConnection(socket)
+        socket.close()
+else:
+    handleConnection(socket)
+    socket.close()
