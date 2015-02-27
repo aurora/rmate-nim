@@ -26,12 +26,15 @@
 
 import strutils
 import os
+import posix
 
 # init
 #
-var VERSION = "0.0.1"
-var VERSION_DATE = "2015-02-26"
-var VERSION_STRING = "rmate-nim $# ($#)" % [VERSION, VERSION_DATE]
+let VERSION = "0.0.1"
+let VERSION_DATE = "2015-02-26"
+let VERSION_STRING = "rmate-nim $# ($#)" % [VERSION, VERSION_DATE]
+
+var hostname = ""
 
 var host = "localhost"
 var port = "52698"
@@ -43,6 +46,8 @@ var filetype = ""
 var verbose = false
 var nowait = true
 var force = false
+
+discard gethostname(hostname, 1024)
 
 # process command-line parameters
 #
@@ -72,27 +77,20 @@ proc showUsage() =
         --version    Show version and exit.
     """ % [host, port])
 
+proc log(msg: string) =
+    if verbose:
+        stderr.writeln(msg)
+
 let arguments = getargs()
-var skip = false
+var arg = arguments()
 
 while true:
-    let arg = arguments()
-
-    if finished(arguments):
+    if finished(arguments) or not arg.startsWith("-"):
         break
 
-    if skip or arg == "-" or not arg.startsWith("-"):
-        if filepath == "":
-            filepath = arg
-        else:
-            echo("There are more than one files specified. Opening only $# and ignoring other." % [filepath])
-
-            if skip:
-                break
-
     case arg
-        of "--":
-            skip = true
+        of "-":
+            break
         of "--host", "-H":
             host = arguments()
         of "--port", "-p":
@@ -122,4 +120,34 @@ while true:
             quit(QuitSuccess)
         else:
             discard
+
+    arg = arguments()
+
+if not finished(arguments):
+    filepath=arg
+    
+    arg = arguments()
+    
+    if not finished(arguments) and arg != "":
+        echo("There are more than one files specified. Opening only $# and ignoring other." % [filepath])
+
+if filepath == "":
+    showUsage()
+    quit(QuitFailure)
+
+if filepath != "-":
+    if fileExists(filepath) and fpUserWrite notin getFilePermissions(filepath):
+        if not force:
+            echo("File $# is not writable! Use -f to open anyway." % [filepath])
+            quit(QuitFailure)
+        else:
+            log("File $# is not writable! Opening anyway." % [filepath])
+
+    if displayname == "":
+        displayname = hostname & ":" & filepath
+else:
+    displayname = "$#:untitled" % [hostname]
+
+# main
+#
 
