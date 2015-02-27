@@ -152,7 +152,55 @@ else:
 # main
 #
 proc handleConnection(socket: Socket) =
-    echo "blub"
+    var inp = "".TaintedString
+    var cmd = ""
+    var token = ""
+    var tmp = ""
+
+    while true:
+        socket.readLine(inp)
+        inp = strip(inp)
+
+        if inp == "":
+            break
+
+        cmd = inp
+        token = ""
+        tmp = ""
+
+        while true:
+            socket.readLine(inp)
+            inp = strip(inp)
+
+            if inp == "":
+                break
+
+            let pos = inp.find(":")
+
+            case inp[0..pos-1]
+                of "token":
+                    token = inp[pos+2..inp.len-1]
+                of "data":
+                    let size = parseInt(inp[pos+2..inp.len-1])
+                    var buffer = ""
+
+                    discard socket.recv(buffer, size)
+
+                    tmp = tmp & buffer
+                else:
+                    discard
+
+        case cmd
+            of "close":
+                log("Closing $#" % [token])
+            of "save":
+                log("Saving $#" % [token])
+
+                if token != "-":
+                    writeFile(token, tmp)
+            else:
+                discard
+
 
 var inp = "".TaintedString
 var socket = newSocket()
