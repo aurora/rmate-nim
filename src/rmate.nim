@@ -27,6 +27,7 @@
 import strutils
 import os
 import posix
+import net
 
 # init
 #
@@ -125,9 +126,9 @@ while true:
 
 if not finished(arguments):
     filepath=arg
-    
+
     arg = arguments()
-    
+
     if not finished(arguments) and arg != "":
         echo("There are more than one files specified. Opening only $# and ignoring other." % [filepath])
 
@@ -150,4 +151,50 @@ else:
 
 # main
 #
+var inp = "".TaintedString
+var socket = newSocket()
 
+try:
+    socket.connect(host, Port(parseInt(port)))
+except:
+    echo("Unable to connect to TextMate on $#:$#" % [host, port])
+    quit(QuitFailure)
+
+socket.readLine(inp)
+
+log(inp.string)
+
+socket.send("open\n")
+socket.send("display-name: $#\n" % [displayname])
+socket.send("real-path: $#\n" % [filepath])
+socket.send("data-on-save: yes\n")
+socket.send("re-activate: yes\n")
+socket.send("token: $#\n" % [filepath])
+
+if selection != "":
+    socket.send("selection: $#\n" % [selection])
+
+if filetype != "":
+    socket.send("file-type: $#\n" % [filetype])
+
+if filepath != "-" and fileExists(filepath):
+    let filesize = $getFileSize(filepath)
+
+    socket.send("data: $#\n" % [filesize])
+    socket.send(readFile(filepath))
+elif filepath == "-":
+    if isatty(0) == 1:
+        echo("Reading from stdin, press ^D to stop")
+    else:
+        log("Reading from stdin")
+
+    let data = readAll(stdin)
+
+    socket.send("data: $#\n" % [$len(data)])
+    socket.send(data)
+else:
+    socket.send("data: 0\n")
+
+socket.send("\n.\n")
+
+socket.close()
