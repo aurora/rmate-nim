@@ -28,6 +28,8 @@ import strutils
 import os
 import posix
 import net
+import streams
+import parsecfg
 
 # init
 #
@@ -49,6 +51,40 @@ var nowait = true
 var force = false
 
 discard gethostname(hostname, 1024)
+
+# load config file
+#
+proc loadConfig(rc_file: string) =
+    if fileExists(rc_file):
+        var input = newFileStream(rc_file, fmRead)
+        var p: CfgParser
+
+        if input != nil:
+            open(p, input, rc_file)
+
+            while true:
+                var k = next(p)
+
+                case k.kind
+                    of cfgEof:
+                        break
+                    of cfgKeyValuePair:
+                        case k.key
+                            of "host":
+                                host = k.value
+                            of "port":
+                                port = k.value
+                            else:
+                                discard
+                    else:
+                        discard
+
+            close(p)
+
+let app_name = extractFilename(getAppFilename())
+
+for i in ["/etc/" & app_name, getHomeDir() & "/." & app_name & ".rc"]:
+    loadConfig(i)
 
 # process command-line parameters
 #
