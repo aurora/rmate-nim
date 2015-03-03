@@ -37,10 +37,19 @@ let VERSION = "0.0.1"
 let VERSION_DATE = "2015-02-26"
 let VERSION_STRING = "rmate-nim $# ($#)" % [VERSION, VERSION_DATE]
 
+let app_name = "rmate"
+
+var use_ssl = false
+
 var hostname = ""
+var home = getHomeDir()
 
 var host = "localhost"
 var port = "52698"
+
+var ssl_cert = ""
+var ssl_key = ""
+var ssl_verify = CVerifyNone
 
 var filepath = ""
 var selection = ""
@@ -74,6 +83,15 @@ proc loadConfig(rc_file: string) =
                                 host = k.value
                             of "port":
                                 port = k.value
+                            of "ssl_cert":
+                                ssl_cert = k.value
+                            of "ssl_key":
+                                ssl_key = k.value
+                            of "ssl_verify":
+                                if (k.value == "true" or k.value == "yes" or k.value == "1"):
+                                    ssl_verify = CVerifyPeer
+                                else:
+                                    ssl_verify = CVerifyNone
                             else:
                                 discard
                     else:
@@ -81,9 +99,13 @@ proc loadConfig(rc_file: string) =
 
             close(p)
 
-let app_name = extractFilename(getAppFilename())
+let search_path = [
+    "/etc/" & app_name,
+    home & "/." & app_name & "/" & app_name & ".rc",
+    home & "/." & app_name & ".rc"
+]
 
-for i in ["/etc/" & app_name, getHomeDir() & "/." & app_name & ".rc"]:
+for i in search_path:
     loadConfig(i)
 
 # process command-line parameters
@@ -104,6 +126,9 @@ proc showUsage() =
     -H, --host HOST  Connect to HOST. Use 'auto' to detect the host from
                      SSH. Defaults to $#.
     -p, --port PORT  Port number to use for connection. Defaults to $#.
+        --cert FILE  Client certificate file for SSL connections.
+        --key  FILE  Client certificate key file for SSL connections.
+        --verify     Verify peer for SSL connections.
     -w, --[no-]wait  Wait for file to be closed by TextMate.
     -l, --line LINE  Place caret on line number after loading file.
     -m, --name NAME  The display name shown in TextMate.
@@ -132,6 +157,12 @@ while true:
             host = arguments()
         of "--port", "-p":
             port = arguments()
+        of "--cert":
+            ssl_cert = arguments()
+        of "--key":
+            ssl_key = arguments()
+        of "--verify":
+            ssl_verify = CVerifyPeer
         of "--wait", "-w":
             nowait = false
         of "--no-wait":
@@ -184,6 +215,14 @@ if filepath != "-":
         displayname = hostname & ":" & filepath
 else:
     displayname = "$#:untitled" % [hostname]
+
+if not fileExists(ssl_cert):
+    echo("SSL client ceritificate file $# not found" % [ssl_cert])
+    quit(QuitFailure)
+
+if not fileExists(ssl_key):
+    echo("SSL client certificate key file $# not found" % [ssl_key])
+    quit(QuitFailure)
 
 # main
 #
@@ -240,6 +279,9 @@ proc handleConnection(socket: Socket) =
 
 var inp = "".TaintedString
 var socket = newSocket()
+
+let context = newContext(verifyMode = ssl_verify, certFile = ssl_cert, keyFile = ssl_key)
+wrapSocket(context, socket)
 
 try:
     socket.connect(host, Port(parseInt(port)))
