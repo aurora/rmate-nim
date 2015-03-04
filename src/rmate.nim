@@ -48,7 +48,6 @@ var host = "localhost"
 var port = "52698"
 
 var ssl_cert = ""
-var ssl_key = ""
 var ssl_verify = CVerifyNone
 
 var filepath = ""
@@ -85,8 +84,6 @@ proc loadConfig(rc_file: string) =
                                 port = k.value
                             of "ssl_cert":
                                 ssl_cert = k.value
-                            of "ssl_key":
-                                ssl_key = k.value
                             of "ssl_verify":
                                 if (k.value == "true" or k.value == "yes" or k.value == "1"):
                                     ssl_verify = CVerifyPeer
@@ -126,9 +123,8 @@ proc showUsage() =
     -H, --host HOST  Connect to HOST. Use 'auto' to detect the host from
                      SSH. Defaults to $#.
     -p, --port PORT  Port number to use for connection. Defaults to $#.
-        --cert FILE  Client certificate file for SSL connections.
-        --key  FILE  Client certificate key file for SSL connections.
-        --verify     Verify peer for SSL connections.
+        --cert FILE  Client certificate file (pem format) for SSL connection.
+        --verify     Verify peer for SSL connection.
     -w, --[no-]wait  Wait for file to be closed by TextMate.
     -l, --line LINE  Place caret on line number after loading file.
     -m, --name NAME  The display name shown in TextMate.
@@ -159,8 +155,6 @@ while true:
             port = arguments()
         of "--cert":
             ssl_cert = arguments()
-        of "--key":
-            ssl_key = arguments()
         of "--verify":
             ssl_verify = CVerifyPeer
         of "--wait", "-w":
@@ -220,10 +214,6 @@ if not fileExists(ssl_cert):
     echo("SSL client ceritificate file $# not found" % [ssl_cert])
     quit(QuitFailure)
 
-if not fileExists(ssl_key):
-    echo("SSL client certificate key file $# not found" % [ssl_key])
-    quit(QuitFailure)
-
 # main
 #
 proc handleConnection(socket: Socket) =
@@ -280,7 +270,7 @@ proc handleConnection(socket: Socket) =
 var inp = "".TaintedString
 var socket = newSocket()
 
-let context = newContext(verifyMode = ssl_verify, certFile = ssl_cert, keyFile = ssl_key)
+let context = newContext(verifyMode = ssl_verify, certFile = ssl_cert, keyFile = ssl_cert)
 wrapSocket(context, socket)
 
 try:
