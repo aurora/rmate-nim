@@ -297,9 +297,7 @@ if filetype != "":
     socket.send("file-type: $#\n" % [filetype])
 
 if filepath != "-" and fileExists(filepath):
-    let filesize = $getFileSize(filepath)
-
-    socket.send("data: $#\n" % [filesize])
+    socket.send("data: $#\n" % [$getFileSize(filepath)])
     socket.send(readFile(filepath))
 elif filepath == "-":
     if isatty(0) == 1:
