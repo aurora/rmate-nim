@@ -37,10 +37,7 @@ let VERSION = "0.0.1"
 let VERSION_DATE = "2015-02-26"
 let VERSION_STRING = "rmate-nim $# ($#)" % [VERSION, VERSION_DATE]
 
-let app_name = "rmate"
-
 var hostname = ""
-var home = getHomeDir()
 
 var host = "localhost"
 var port = "52698"
@@ -94,10 +91,12 @@ proc loadConfig(rc_file: string) =
 
             close(p)
 
+let app_name = expandFilename(getAppFilename())
+let home_dir = getHomeDir()
 let search_path = [
     "/etc/" & app_name,
-    home & "/." & app_name & "/" & app_name & ".rc",
-    home & "/." & app_name & ".rc"
+    home_dir & "/." & app_name & "/" & app_name & ".rc",
+    home_dir & "/." & app_name & ".rc"
 ]
 
 for i in search_path:
