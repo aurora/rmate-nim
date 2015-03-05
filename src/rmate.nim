@@ -39,8 +39,6 @@ let VERSION_STRING = "rmate-nim $# ($#)" % [VERSION, VERSION_DATE]
 
 let app_name = "rmate"
 
-var use_ssl = false
-
 var hostname = ""
 var home = getHomeDir()
 
@@ -210,9 +208,12 @@ if filepath != "-":
 else:
     displayname = "$#:untitled" % [hostname]
 
-if not fileExists(ssl_cert):
-    echo("SSL client ceritificate file $# not found" % [ssl_cert])
-    quit(QuitFailure)
+if ssl_cert != "":
+    if not fileExists(ssl_cert):
+        echo("SSL client ceritificate file $# not found" % [ssl_cert])
+        quit(QuitFailure)
+
+    displayname = "[SSL] " & displayname
 
 # main
 #
@@ -270,8 +271,9 @@ proc handleConnection(socket: Socket) =
 var inp = "".TaintedString
 var socket = newSocket()
 
-let context = newContext(verifyMode = ssl_verify, certFile = ssl_cert, keyFile = ssl_cert)
-wrapSocket(context, socket)
+if ssl_cert != "":
+    let context = newContext(verifyMode = ssl_verify, certFile = ssl_cert, keyFile = ssl_cert)
+    wrapSocket(context, socket)
 
 try:
     socket.connect(host, Port(parseInt(port)))
@@ -282,6 +284,12 @@ except:
 socket.readLine(inp)
 
 log(inp.string)
+
+if not inp.startsWith("220 "):
+    echo("Unable to connect to TextMate on $#:$#" % [host, port])
+    quit(QuitFailure)
+
+log("Connected to TextMate on $#:$# $#using SSL" % [host, port, if ssl_cert != "": "" else: "not "])
 
 socket.send("open\n")
 socket.send("display-name: $#\n" % [displayname])
