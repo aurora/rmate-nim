@@ -215,7 +215,13 @@ if filepath != "-":
 else:
     displayname = "$#:untitled" % [hostname]
 
+if ssl_verify == CVerifyPeer and not use_ssl:
+    log("Flag --verify is ignored for non-SSL connections.")
+
 if ssl_cert != "":
+    if not use_ssl:
+        log("Flag --cert is ignored for non-SSL connections.")
+
     if not fileExists(ssl_cert):
         echo("SSL client ceritificate file $# not found" % [ssl_cert])
         quit(QuitFailure)
