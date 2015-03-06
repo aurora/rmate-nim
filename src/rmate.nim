@@ -178,13 +178,13 @@ while true:
             verbose = true
         of "--help", "-h":
             showUsage()
-            quit(QuitSuccess)
+            quit(QuitFailure)
         of "-?":
             showUsage()
             quit(QuitFailure)
         of "--version":
             echo(VERSION_STRING)
-            quit(QuitSuccess)
+            quit(QuitFailure)
         else:
             discard
 
