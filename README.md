@@ -1,4 +1,4 @@
-# rmate-nim
+# rmate
 
 **EXPERIMENTAL**
 
@@ -8,9 +8,9 @@ Current state is: seems working, but be careful: i am just learning Nim :)
 ## Description
 
 TextMate 2 adds a nice feature, where it is possible to edit files on a remote server
-using a helper script. The tool needs to be copied to the server, you want to remote 
-edit files, on. After that, open your TM2 preferences and enable "Allow rmate connections" 
-setting in the "Terminal" settings and adjust the setting "Access for" according to your 
+using a helper script. The tool needs to be copied to the server, you want to remote
+edit files, on. After that, open your TM2 preferences and enable "Allow rmate connections"
+setting in the "Terminal" settings and adjust the setting "Access for" according to your
 needs:
 
 ### Local clients
@@ -24,15 +24,18 @@ addition:
 If you are logged in on the remote system, you can now just execute
 
 	rmate test.txt
-	
 
 ### Remote clients
 
 On some machines, where port forwarding is not possible, for example due to a missing ssh
-daemon, you can allow access for "remote clients". Just ssh or telnet to the remote machine
+daemon or environments that could cause port conflicts with concurrent users,
+you can allow access for "remote clients". Just ssh or telnet to the remote machine
 and execute:
 
     rmate -H textmate-host test.txt
+
+To secure your TextMate, rmate supports SSL secured connections and client certificate
+authentication. See the "Advanced usage" section below for details.
 
 ### Example
 
@@ -40,7 +43,7 @@ Example session: Editing html file located on an SGI o2: <https://github.com/aur
 
 ## Requirements
 
-A bash with compiled support for "/dev/tcp" is required. This is not the case on some 
+A bash with compiled support for "/dev/tcp" is required. This is not the case on some
 older linux distributions, like Ubuntu 9.x.
 
 ## Usage
@@ -55,9 +58,12 @@ Read text from stdin
 
 ### Arguments
 
-    -H, --host HOST  Connect to HOST. Use 'auto' to detect the host from SSH.
-    -p, --port PORT  Port number to use for connection.
-        --cert FILE  Client certificate file (pem format) for SSL connection.
+    -H, --host HOST  Connect to HOST. Use 'auto' to detect the host from
+                     SSH. Defaults to $#.
+    -p, --port PORT  Port number to use for connection. Defaults to $#.
+        --ssl        Use SSL encrypted connection.
+        --cert FILE  Certificate file (PEM format) for client side certificate
+                     authentication.
         --verify     Verify peer for SSL connection.
     -w, --[no-]wait  Wait for file to be closed by TextMate.
     -l, --line LINE  Place caret on line number after loading file.
@@ -68,12 +74,11 @@ Read text from stdin
     -h, --help       Display this usage information.
         --version    Show version and exit.
 
-
 ### Default parameter configuration
 
-Some default parameters (_host_ and _port_) can be configured by defining them 
-as the environment variables `RMATE_HOST` and `RMATE_PORT` or by putting them 
-in a configuration file. The configuration files loaded are `/etc/rmate.rc` 
+Some default parameters (_host_ and _port_) can be configured by defining them
+as the environment variables `RMATE_HOST` and `RMATE_PORT` or by putting them
+in a configuration file. The configuration files loaded are `/etc/rmate.rc`
 and `~/.rmate.rc`, e.g.:
 
     host: auto  # prefer host from SSH_CONNECTION over localhost
@@ -91,6 +96,44 @@ The precedence for setting the configuration is (higher precedence counts):
 3. ~/.rmate/rmate.rc
 4. ~/.rmate.rc
 5. environment variables (RMATE\_HOST, RMATE\_PORT)
+
+## Advanced usage
+
+This version of rmate supports SSL secured connections and client certificate
+authentication. For this to work you must configure TextMate to allow connections
+by remote clients. You should block the selected port TextMate is listening on by
+your systems firewall.
+
+Next you must install a proxy supporting SSL -> non-SSL connections like stunnel
+or haproxy on your Mac. Details regarding this would be to much for this documentation.
+For haproxy there is an example configuration [available](https://github.com/aurora/rmate-nim/blob/master/share/haproxy.dist.conf).
+
+Have a look at [this](http://blog.nategood.com/client-side-certificate-authentication-in-ngi)
+excellent tutorial for details on how to create self-signed SSL server certificates and
+certificates for client side certificate authentication.
+
+Create a PEM file of the client certificate by merging the client certificate and the
+client certificate key file, for example:
+
+     cat ca.crt ca.key > ca.pem
+
+Copy the resulting client certificate file over to the machine you have installed rmate
+on and you want to edit files from.
+
+To enable SSL encrypted connections, the `--ssl` flag needs to be specified as argument
+for the rmate command. Additionally the `--cert ...` flag needs to be specified if
+client side certificate authentication must be used. To verify the SSL server certificate
+on rmate side, you can additional specify the `--verify` flag. This flag should be ommited
+when using self-signed certificates.
+
+Optionally the flags can be configured in the rmate configuration file, similar to host
+and port settings:
+
+    ssl=yes
+    ssl_cert=file
+    ssl_verify=yes
+
+Note that the `ssl_verify` setting should be omitted when using self-signed certificates.
 
 ## Disclaimer
 
