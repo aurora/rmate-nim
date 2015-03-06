@@ -42,6 +42,7 @@ var hostname = ""
 var host = "localhost"
 var port = "52698"
 
+var use_ssl = false
 var ssl_cert = ""
 var ssl_verify = CVerifyNone
 
@@ -77,6 +78,9 @@ proc loadConfig(rc_file: string) =
                                 host = k.value
                             of "port":
                                 port = k.value
+                            of "ssl":
+                                if (k.value == "true" or k.value == "yes" or k.value == "1"):
+                                    use_ssl = true
                             of "ssl_cert":
                                 ssl_cert = k.value
                             of "ssl_verify":
@@ -120,7 +124,9 @@ proc showUsage() =
     -H, --host HOST  Connect to HOST. Use 'auto' to detect the host from
                      SSH. Defaults to $#.
     -p, --port PORT  Port number to use for connection. Defaults to $#.
-        --cert FILE  Client certificate file (pem format) for SSL connection.
+        --ssl        Use SSL encrypted connection.
+        --cert FILE  Certificate file (PEM format) for client side certificate
+                     authentication.
         --verify     Verify peer for SSL connection.
     -w, --[no-]wait  Wait for file to be closed by TextMate.
     -l, --line LINE  Place caret on line number after loading file.
@@ -150,6 +156,8 @@ while true:
             host = arguments()
         of "--port", "-p":
             port = arguments()
+        of "--ssl":
+            use_ssl = true
         of "--cert":
             ssl_cert = arguments()
         of "--verify":
@@ -270,7 +278,7 @@ proc handleConnection(socket: Socket) =
 var inp = "".TaintedString
 var socket = newSocket()
 
-if ssl_cert != "":
+if use_ssl:
     let context = newContext(verifyMode = ssl_verify, certFile = ssl_cert, keyFile = ssl_cert)
     wrapSocket(context, socket)
 
