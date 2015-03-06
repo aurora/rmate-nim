@@ -13,7 +13,7 @@ edit files, on. After that, open your TM2 preferences and enable "Allow rmate co
 setting in the "Terminal" settings and adjust the setting "Access for" according to your
 needs:
 
-### Local clients
+### Local client connection
 
 It's a good idea to allow access only for local clients. In this case you need to open
 a SSH connection to the system you want to edit a file on and specify a remote tunnel in
@@ -25,17 +25,56 @@ If you are logged in on the remote system, you can now just execute
 
 	rmate test.txt
 
-### Remote clients
+Please have a look at the sections "Remote client connection" or "SSL secured client
+connection" if ssh is not available or in environments where remote port forwarding
+could result in conflicts for example with concurrent users.
 
-On some machines, where port forwarding is not possible, for example due to a missing ssh
-daemon or environments that could cause port conflicts with concurrent users,
-you can allow access for "remote clients". Just ssh or telnet to the remote machine
-and execute:
+### Remote client connection
+
+On some machines, where port forwarding is not possible, you can allow access for
+"remote clients". Just ssh or telnet to the remote machine and execute:
 
     rmate -H textmate-host test.txt
 
 To secure your TextMate, rmate supports SSL secured connections and client certificate
-authentication. See the "Advanced usage" section below for details.
+authentication. See the section "SSL secured client connection" below for details.
+
+### SSL secured client connection
+
+This version of rmate supports SSL secured connections and client certificate
+authentication. For this to work it's recommended to configure TextMate to
+allow connections from local clients only.
+
+Next you must install a proxy supporting SSL -> non-SSL connections like stunnel
+or haproxy on your Mac. Details regarding this would be to much for this documentation.
+For haproxy there is an example configuration [available](https://github.com/aurora/rmate-nim/blob/master/share/haproxy.dist.conf).
+
+Have a look at [this](http://blog.nategood.com/client-side-certificate-authentication-in-ngi)
+excellent tutorial for details on how to create self-signed SSL server certificates and
+certificates for client side certificate authentication.
+
+Create a PEM file of the client certificate by merging the client certificate and the
+client certificate key file, for example:
+
+     cat ca.crt ca.key > ca.pem
+
+Copy the resulting client certificate file over to the machine you have installed rmate
+on and you want to edit files from.
+
+To enable SSL encrypted connections, the `--ssl` flag needs to be specified as argument
+for the rmate command. Additionally the `--cert ...` flag needs to be specified if
+client side certificate authentication must be used. To verify the SSL server certificate
+on rmate side, you can additional specify the `--verify` flag. This flag should be ommited
+when using self-signed certificates.
+
+Optionally the flags can be configured in the rmate configuration file, similar to host
+and port settings:
+
+    ssl=yes
+    ssl_cert=file
+    ssl_verify=yes
+
+Note that the `ssl_verify` setting should be omitted when using self-signed certificates.
 
 ### Example
 
@@ -96,44 +135,6 @@ The precedence for setting the configuration is (higher precedence counts):
 3. ~/.rmate/rmate.rc
 4. ~/.rmate.rc
 5. environment variables (RMATE\_HOST, RMATE\_PORT)
-
-## Advanced usage
-
-This version of rmate supports SSL secured connections and client certificate
-authentication. For this to work you must configure TextMate to allow connections
-by remote clients. You should block the selected port TextMate is listening on by
-your systems firewall.
-
-Next you must install a proxy supporting SSL -> non-SSL connections like stunnel
-or haproxy on your Mac. Details regarding this would be to much for this documentation.
-For haproxy there is an example configuration [available](https://github.com/aurora/rmate-nim/blob/master/share/haproxy.dist.conf).
-
-Have a look at [this](http://blog.nategood.com/client-side-certificate-authentication-in-ngi)
-excellent tutorial for details on how to create self-signed SSL server certificates and
-certificates for client side certificate authentication.
-
-Create a PEM file of the client certificate by merging the client certificate and the
-client certificate key file, for example:
-
-     cat ca.crt ca.key > ca.pem
-
-Copy the resulting client certificate file over to the machine you have installed rmate
-on and you want to edit files from.
-
-To enable SSL encrypted connections, the `--ssl` flag needs to be specified as argument
-for the rmate command. Additionally the `--cert ...` flag needs to be specified if
-client side certificate authentication must be used. To verify the SSL server certificate
-on rmate side, you can additional specify the `--verify` flag. This flag should be ommited
-when using self-signed certificates.
-
-Optionally the flags can be configured in the rmate configuration file, similar to host
-and port settings:
-
-    ssl=yes
-    ssl_cert=file
-    ssl_verify=yes
-
-Note that the `ssl_verify` setting should be omitted when using self-signed certificates.
 
 ## Disclaimer
 
