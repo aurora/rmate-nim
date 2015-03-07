@@ -39,8 +39,8 @@ let VERSION_STRING = "rmate-nim $# ($#)" % [VERSION, VERSION_DATE]
 
 var hostname = ""
 
-var host = "localhost"
-var port = "52698"
+var host = if existsEnv("RMATE_HOST"): getEnv("RMATE_HOST") else: "localhost"
+var port = if existsEnv("RMATE_PORT"): getEnv("RMATE_PORT") else: "52698"
 
 var use_ssl = false
 var ssl_cert = ""
