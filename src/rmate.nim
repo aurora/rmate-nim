@@ -53,6 +53,7 @@ var filetype = ""
 var verbose = false
 var nowait = true
 var force = false
+var newwin = false
 
 discard gethostname(hostname, 1024)
 
@@ -132,6 +133,7 @@ proc showUsage() =
     -l, --line LINE  Place caret on line number after loading file.
     -m, --name NAME  The display name shown in TextMate.
     -t, --type TYPE  Treat file as having specified type.
+    -n, --new        Open in a new window (Sublime Text).
     -f, --force      Open even if file is not writable.
     -v, --verbose    Verbose logging messages.
     -h, --help       Display this usage information.
@@ -172,6 +174,8 @@ while true:
             displayname = arguments()
         of "--type", "-t":
             filetype = arguments()
+        of "--new", "-n":
+            newwin = true
         of "--force", "-f":
             force = true
         of "--verbose", "-v":
@@ -310,6 +314,9 @@ socket.send("real-path: $#\n" % [filepath])
 socket.send("data-on-save: yes\n")
 socket.send("re-activate: yes\n")
 socket.send("token: $#\n" % [filepath])
+
+if newwin:
+    socket.send("new: yes\n")
 
 if selection != "":
     socket.send("selection: $#\n" % [selection])
