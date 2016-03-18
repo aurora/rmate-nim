@@ -39,9 +39,10 @@ let VERSION_STRING = "rmate-nim $# ($#)" % [VERSION, VERSION_DATE]
 
 var hostname = ""
 
-var host = "localhost"
-var port = "52698"
+var host = if existsEnv("RMATE_HOST"): getEnv("RMATE_HOST") else: "localhost"
+var port = if existsEnv("RMATE_PORT"): getEnv("RMATE_PORT") else: "52698"
 
+var use_ssl = false
 var ssl_cert = ""
 var ssl_verify = CVerifyNone
 
@@ -52,6 +53,7 @@ var filetype = ""
 var verbose = false
 var nowait = true
 var force = false
+var newwin = false
 
 discard gethostname(hostname, 1024)
 
@@ -77,6 +79,9 @@ proc loadConfig(rc_file: string) =
                                 host = k.value
                             of "port":
                                 port = k.value
+                            of "ssl":
+                                if (k.value == "true" or k.value == "yes" or k.value == "1"):
+                                    use_ssl = true
                             of "ssl_cert":
                                 ssl_cert = k.value
                             of "ssl_verify":
@@ -120,12 +125,15 @@ proc showUsage() =
     -H, --host HOST  Connect to HOST. Use 'auto' to detect the host from
                      SSH. Defaults to $#.
     -p, --port PORT  Port number to use for connection. Defaults to $#.
-        --cert FILE  Client certificate file (pem format) for SSL connection.
+        --ssl        Use SSL encrypted connection.
+        --cert FILE  Certificate file (PEM format) for client side certificate
+                     authentication.
         --verify     Verify peer for SSL connection.
     -w, --[no-]wait  Wait for file to be closed by TextMate.
     -l, --line LINE  Place caret on line number after loading file.
     -m, --name NAME  The display name shown in TextMate.
     -t, --type TYPE  Treat file as having specified type.
+    -n, --new        Open in a new window (Sublime Text).
     -f, --force      Open even if file is not writable.
     -v, --verbose    Verbose logging messages.
     -h, --help       Display this usage information.
@@ -150,6 +158,8 @@ while true:
             host = arguments()
         of "--port", "-p":
             port = arguments()
+        of "--ssl":
+            use_ssl = true
         of "--cert":
             ssl_cert = arguments()
         of "--verify":
@@ -164,19 +174,21 @@ while true:
             displayname = arguments()
         of "--type", "-t":
             filetype = arguments()
+        of "--new", "-n":
+            newwin = true
         of "--force", "-f":
             force = true
         of "--verbose", "-v":
             verbose = true
         of "--help", "-h":
             showUsage()
-            quit(QuitSuccess)
+            quit(QuitFailure)
         of "-?":
             showUsage()
             quit(QuitFailure)
         of "--version":
             echo(VERSION_STRING)
-            quit(QuitSuccess)
+            quit(QuitFailure)
         else:
             discard
 
@@ -207,7 +219,13 @@ if filepath != "-":
 else:
     displayname = "$#:untitled" % [hostname]
 
+if ssl_verify == CVerifyPeer and not use_ssl:
+    log("Flag --verify is ignored for non-SSL connections.")
+
 if ssl_cert != "":
+    if not use_ssl:
+        log("Flag --cert is ignored for non-SSL connections.")
+
     if not fileExists(ssl_cert):
         echo("SSL client ceritificate file $# not found" % [ssl_cert])
         quit(QuitFailure)
@@ -270,7 +288,7 @@ proc handleConnection(socket: Socket) =
 var inp = "".TaintedString
 var socket = newSocket()
 
-if ssl_cert != "":
+if use_ssl:
     let context = newContext(verifyMode = ssl_verify, certFile = ssl_cert, keyFile = ssl_cert)
     wrapSocket(context, socket)
 
@@ -296,6 +314,9 @@ socket.send("real-path: $#\n" % [filepath])
 socket.send("data-on-save: yes\n")
 socket.send("re-activate: yes\n")
 socket.send("token: $#\n" % [filepath])
+
+if newwin:
+    socket.send("new: yes\n")
 
 if selection != "":
     socket.send("selection: $#\n" % [selection])
