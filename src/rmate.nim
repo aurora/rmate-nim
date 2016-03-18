@@ -110,7 +110,7 @@ for i in search_path:
 # process command-line parameters
 #
 proc getargs(): iterator(): string =
-    return iterator(): string =
+    return iterator(): string {.closure.} =
         let args = commandLineParams()
 
         for arg in args:
