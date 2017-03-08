@@ -142,7 +142,7 @@ proc showUsage() =
 
 proc log(msg: string) =
     if verbose:
-        stderr.writeln(msg)
+        stderr.writeLine(msg)
 
 let arguments = getargs()
 var arg = arguments()
