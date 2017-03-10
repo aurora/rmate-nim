@@ -80,11 +80,6 @@ Note that the `ssl_verify` setting should be omitted when using self-signed cert
 
 Example session: Editing html file located on an SGI o2: <https://github.com/aurora/rmate/wiki/Screens>
 
-## Requirements
-
-A bash with compiled support for "/dev/tcp" is required. This is not the case on some
-older linux distributions, like Ubuntu 9.x.
-
 ## Usage
 
 Edit specified file
@@ -146,7 +141,7 @@ any damage the software may cause to your system or files.
 
 rmate
 
-Copyright (C) 2015 by Harald Lapp <harald@octris.org>
+Copyright (C) 2015-2017 by Harald Lapp <harald@octris.org>
 
 This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 
